@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "get-audio-duration": "^3.1.0",
+    "install": "^0.13.0",
+    "npm": "^8.13.2",
+    "obs-websocket-js": "^4.0.3",
+    "twitch-chatbot-boilerplate": "^0.4.0"
+  },
+  "name": "torbanbot",
+  "version": "1.0.0",
+  "main": "Bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node Bot.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
