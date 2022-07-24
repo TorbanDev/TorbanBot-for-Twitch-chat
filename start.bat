@@ -1,2 +1,1 @@
-npm i
-node Bot.js
+npm i && npm start
