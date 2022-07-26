@@ -21,6 +21,7 @@ const setCooldown = (command) => {
   cooldownList[command] = time + cooldown;
 };
 const onCooldown = (command) => {
+  if (cooldownList[command] === undefined) return false;
   const time = Math.floor(Date.now() / 1000);
   return cooldownList[command] >= time;
 };
@@ -45,14 +46,14 @@ const main = async () => {
     const command = message.toLowerCase().split("!")[1];
     const isMod = userstate.mod;
     const isBroadcaster = userstate.username === channel.split("#")[1];
+    const isAdmin = isMod || isBroadcaster;
 
     if (command === "hello") {
       client.say(channel, `@${userstate.username}, heya!`);
     }
     if (command.startsWith("cd")) {
-      if (!(isMod || isBroadcaster)) return;
+      if (!isAdmin) return;
       const timer = message.split(" ")[1];
-      console.log(timer);
       cooldown = parseInt(timer);
       if (timer === "0") {
         requireCooldown = false;
@@ -62,11 +63,10 @@ const main = async () => {
     }
     const foundCommand = commands.find((item) => item.commandName === command);
     if (foundCommand) {
-      if (
-        !(isMod || isBroadcaster) &&
-        requireCooldown &&
-        onCooldown(foundCommand.commandName)
-      ) {
+      if (isAdmin) {
+        AddToQueue(foundCommand, true);
+        return;
+      } else if (requireCooldown && onCooldown(foundCommand.commandName)) {
         const cooldownTime = getCooldown(foundCommand.commandName);
         switch (foundCommand.commandName) {
           case "nut":
@@ -83,7 +83,7 @@ const main = async () => {
             break;
         }
       } else {
-        AddToQueue(foundCommand, true);
+        AddToQueue(foundCommand, false);
       }
     }
   });
@@ -104,10 +104,8 @@ const AddToQueue = (command, sendWithPriority) => {
 
 const PlayNext = () => {
   if (CommandQueue.isEmpty()) {
-    console.log("Queue finished!");
     return;
   }
-  console.log("Starting next command");
   const command = CommandQueue.front();
   PlayCommand(command);
 };
@@ -117,11 +115,9 @@ main().catch((e) => {
 });
 
 const input = process.argv[2];
-let sourceSettings = null;
 
 const obs = new OBSWebSocket();
 const init = async () => {
-  let currentScene = "";
   obs
     .connect({ address: ADDRESS, password: PASSWORD })
     .then(() => {
@@ -147,7 +143,6 @@ const init = async () => {
     .catch((err) => {
       console.log(err);
     });
-  // obs.disconnect();
 };
 const CreateImageSource = async (currentScene) => {
   await obs
@@ -192,35 +187,6 @@ const PlayCommand = async (command, sendWithPriority) => {
   await SendBatch(command.obsBatch);
 };
 
-// const getSourceSettings = async (input) => {
-//   return obs
-//     .send("GetSourceSettings", { sourceName: input })
-//     .then((data) => {
-//       console.log(data);
-//     })
-//     .catch((error) => {
-//       console.log(error);
-//     });
-// };
-
-// const getSceneItemProperties = (input) => {
-//   return obs
-//     .send("GetSceneItemProperties", { item: input })
-//     .then((data) => {
-//       sourceSettings = data;
-//       for (x in sourceSettings) {
-//         console.log(x + " - " + sourceSettings[x]);
-//       }
-//     })
-//     .catch((err) => {
-//       console.log;
-//     });
-//   //   .send("GetSourcesList").then((data) => {
-//   //   data.sources.forEach((source) => {
-//   //     console.log("SOURCE: " + source.name);
-//   //   });
-//   // });
-// };
 const changeScene = (sceneName) => {
   obs
     .send("SetCurrentScene", {
@@ -231,19 +197,6 @@ const changeScene = (sceneName) => {
     });
   return true;
 };
-
-// const getInput = (input) => {
-//   switch (input) {
-//     case "a":
-//       changeScene("main screen");
-//       break;
-//     case "b":
-//       changeScene("left screen");
-//       break;
-//     default:
-//       return;
-//   }
-// };
 
 const WaitBetweenBatch = {
   "request-type": "Sleep",
